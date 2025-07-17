@@ -128,29 +128,55 @@ if (parseInt(year) >= 2000){
 
 var later;
 
-if (sex.toLowerCase() === "mężczyzna"){
-  later = "0295"
-}else{
-  later = "0382"
+
+function generatePESEL(year, month, day, sex) {
+  year = parseInt(year);
+  month = parseInt(month);
+  day = parseInt(day);
+
+  // Dodanie 20 do miesiąca, jeśli rok >= 2000
+  if (year >= 2000) {
+    month += 20;
+  }
+
+  // Formatowanie daty
+  const yy = year.toString().slice(-2);
+  const mm = month.toString().padStart(2, "0");
+  const dd = day.toString().padStart(2, "0");
+
+  // Losowy numer porządkowy (3 cyfry)
+  const randomNum = getRandom(0, 999).toString().padStart(3, "0");
+
+  // Cyfra płci:
+  // - mężczyzna → ostatnia cyfra nieparzysta
+  // - kobieta → ostatnia cyfra parzysta
+  const genderDigit = sex.toLowerCase() === "mężczyzna"
+    ? getRandom(1, 9) | 1   // losowa nieparzysta (1, 3, 5, 7, 9)
+    : getRandom(0, 9) & ~1; // losowa parzysta (0, 2, 4, 6, 8)
+
+  const withoutChecksum = yy + mm + dd + randomNum + genderDigit;
+
+  const checksum = calculateChecksum(withoutChecksum);
+
+  const pesel = withoutChecksum + checksum;
+
+  setData("pesel", pesel);
 }
 
-if (day < 10){
-  day = "0" + day
-}
-
-if (month < 10){
-  month = "0" + month
-}
-
-var pesel = year.toString().substring(2) + month + day + later + "7";
-setData("pesel", pesel)
-
-function setData(id, value){
-
-  document.getElementById(id).innerHTML = value;
-
+function calculateChecksum(pesel10) {
+  const weights = [1, 3, 7, 9, 1, 3, 7, 9, 1, 3];
+  let sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(pesel10[i]) * weights[i];
+  }
+  const mod = sum % 10;
+  return (10 - mod) % 10;
 }
 
 function getRandom(min, max) {
-  return parseInt(Math.random() * (max - min) + min);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function setData(id, value) {
+  document.getElementById(id).innerHTML = value;
 }
